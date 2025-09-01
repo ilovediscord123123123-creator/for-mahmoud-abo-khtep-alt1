@@ -4,58 +4,20 @@
     <meta charset="UTF-8">
     <title>هذا الموقع لحملة مصر ضد 4G</title>
     <style>
-        body {
-            background-color: #000; /* خلفية سوداء */
-            color: #fff; /* نص أبيض */
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 800px;
-            margin: auto;
-            direction: rtl;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin-bottom: 10px;
-            background-color: #111;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #222;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 10px;
-        }
-        button:hover {
-            background-color: #444;
-        }
-        #commentsSection p {
-            background-color: #111;
-            padding: 5px;
-            border-radius: 5px;
-            margin-bottom: 5px;
-        }
-        #copyMessage {
-            display: block;
-            margin: 20px auto;
-            background-color: #333;
-        }
+        body { background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; direction: rtl; }
+        h1, h2 { text-align: center; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; background-color: #111; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 5px; }
+        button { padding: 10px 20px; background-color: #222; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+        button:hover { background-color: #444; }
+        #commentsSection p { background-color: #111; padding: 5px; border-radius: 5px; margin-bottom: 5px; }
+        #copyMessage { display: block; margin: 20px auto; background-color: #333; }
     </style>
 </head>
 <body>
     <h1>هذا الموقع لحملة مصر ضد 4G</h1>
-    
+
     <button id="copyMessage">نسخ رسالة الحملة</button>
-    
+
     <form id="suggestionForm">
         <textarea name="comment" placeholder="اكتب اقتراحك هنا..." required></textarea><br>
         <button type="submit">إرسال</button>
@@ -64,47 +26,61 @@
     <h2>جميع الاقتراحات</h2>
     <div id="commentsSection"></div>
 
-    <script>
-        // طلب اسم المستخدم عند فتح الموقع
+    <!-- Firebase modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnJ9KAVYEj92hZaRIzKgoSsnPO3FKzDTc",
+            authDomain: "nomore4ginegypt.firebaseapp.com",
+            databaseURL: "https://nomore4ginegypt-default-rtdb.firebaseio.com",
+            projectId: "nomore4ginegypt",
+            storageBucket: "nomore4ginegypt.appspot.com",
+            messagingSenderId: "185604724066",
+            appId: "1:185604724066:web:1b87465b52a05dbd74483b",
+            measurementId: "G-SNF384TMSH"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Username
         let userName = localStorage.getItem('userName');
         if (!userName) {
-            userName = prompt("ما اسمك؟");
-            if (!userName) userName = "مجهول";
+            userName = prompt("ما اسمك؟") || "مجهول";
             localStorage.setItem('userName', userName);
         }
 
-        // زر نسخ الرسالة
-        const copyBtn = document.getElementById('copyMessage');
-        copyBtn.addEventListener('click', () => {
+        // Copy message button
+        document.getElementById('copyMessage').addEventListener('click', () => {
             const textToCopy = "انضم إلى حملة مصر ضد 4G وادعم الإنترنت الأفضل!";
             navigator.clipboard.writeText(textToCopy).then(() => {
                 alert("تم نسخ الرسالة إلى الحافظة!");
             });
         });
 
-        // منطق صندوق الاقتراحات
+        // Form submission
         const form = document.getElementById('suggestionForm');
         const commentsSection = document.getElementById('commentsSection');
 
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', e => {
             e.preventDefault();
             const comment = form.comment.value;
-
-            // التخزين مؤقت في localStorage مع اسم المستخدم
-            let comments = JSON.parse(localStorage.getItem('comments') || '[]');
-            comments.push({ name: userName, comment });
-            localStorage.setItem('comments', JSON.stringify(comments));
-
+            push(ref(db, 'comments'), { name: userName, comment });
             form.comment.value = '';
-            loadComments();
         });
 
-        function loadComments() {
-            const comments = JSON.parse(localStorage.getItem('comments') || '[]');
-            commentsSection.innerHTML = comments.map(c => `<p><strong>${c.name}:</strong> ${c.comment}</p>`).join('');
-        }
-
-        loadComments();
+        // Load comments live
+        const commentsRef = ref(db, 'comments');
+        onValue(commentsRef, snapshot => {
+            const comments = snapshot.val() || {};
+            commentsSection.innerHTML = Object.values(comments)
+                .map(c => `<p><strong>${c.name}:</strong> ${c.comment}</p>`)
+                .join('');
+        });
     </script>
 </body>
 </html>
